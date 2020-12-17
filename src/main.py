@@ -1,15 +1,13 @@
 from math import sin
+import sys
+
+from src import spline, linsys_generator as gen, linear_equation
+from src.utils import get_finite_elements
 
 import numpy
 
-from finite_element import FiniteElement
-import linsys_generator as gen
-import linear_equation
-import spline
-
 from PySide2 import QtWidgets
 import pyqtgraph as pg
-import sys
 
 q = []
 finite_elems = []
@@ -33,7 +31,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.graphWidget = pg.PlotWidget()
         self.setCentralWidget(self.graphWidget)
 
-        spline_points = numpy.arange(0.0, 5.0, 0.05)
+        spline_points = numpy.arange(0.0, 10.0, 0.05)
         y = list(map(compute, spline_points))
 
         # plot data: x, y values
@@ -47,46 +45,38 @@ def calculate():
     global xs
     global fs
 
-    xs = [0., 0.5, 1.1, 1.5, 2., 2.5, 2.7, 3., 4., 4.5, 4.8, 5.]
-    fs = list(map(sin, xs))
-    # fs[2] = -0.5
-    finite_elems = [FiniteElement(0, 2), FiniteElement(1, 2), FiniteElement(2, 3),
-                    FiniteElement(3, 3.5), FiniteElement(2, 5)]
-    # spline_point = 0.8
+    xs = [x * 0.5 for x in range(20)]
+    xs_length = len(xs)
+    # fs = list(map(sin, xs))
+    # finite_elems = get_finite_elements([0, 3, 6, 9, 12])
+    fs = list(map(lambda x: - 2 * (x ** 2) + 6 * x + 9, xs))
+    finite_elems = get_finite_elements([0, 7, 12])
 
     a = gen.generate_regularized_matrix_a(
         xs=xs,
-        omega=[1 for i in range(11)],
+        omega=[1 for i in range(xs_length)],
         finite_elems=finite_elems,
         alpha=lambda: 0,
+        # beta=lambda: 0.0000001
         beta=lambda: 0.001
     )
-
     b = gen.generate_vector_b(
         xs=xs,
         fs=fs,
-        omega=[1 for i in range(11)],
+        omega=[1 for i in range(xs_length)],
         finite_elems=finite_elems
     )
     q = linear_equation.solve(
         system_coeffs=a,
         constants=b
     )
-    # print("Got solution of linear system: ", q)
-
-    # res = spline.compute_spline_in_point(
-    #     x=spline_point,
-    #    finite_elems=finite_elems,
-    #     qs=q
-    # )
-    # print("Spline in point", spline_point, "is", res)
 
 
 def main():
     calculate()
     app = QtWidgets.QApplication(sys.argv)
-    main = MainWindow()
-    main.show()
+    main_window = MainWindow()
+    main_window.show()
     sys.exit(app.exec_())
 
 
